@@ -1,0 +1,30 @@
+<NewUpdates>
+	<UpdateInfo>
+		<ID>{0}</ID>
+		<Deployment>
+			<ID>{1}</ID>
+			<Action>Install</Action>
+			<IsAssigned>true</IsAssigned>
+			<LastChangeTime>2020-02-29</LastChangeTime>
+			<AutoSelect>0</AutoSelect>
+			<AutoDownload>0</AutoDownload>
+			<SupersedenceBehavior>0</SupersedenceBehavior>
+		</Deployment>
+		<IsLeaf>true</IsLeaf>
+		<Xml>&lt;UpdateIdentity UpdateID="{2}" RevisionNumber="204" /&gt;&lt;Properties UpdateType="Software" ExplicitlyDeployable="true" AutoSelectOnWebSites="true" /&gt;&lt;Relationships&gt;&lt;Prerequisites&gt;&lt;AtLeastOne IsCategory="true"&gt;&lt;UpdateIdentity UpdateID="0fa1201d-4330-4fa8-8ae9-b877473b6441" /&gt;&lt;/AtLeastOne&gt;&lt;/Prerequisites&gt;&lt;BundledUpdates&gt;&lt;UpdateIdentity UpdateID="{3}" RevisionNumber="204" /&gt;&lt;/BundledUpdates&gt;&lt;/Relationships&gt;</Xml>
+	</UpdateInfo>
+	<UpdateInfo>
+		<ID>{4}</ID>
+		<Deployment>
+			<ID>{5}</ID>
+			<Action>Bundle</Action>
+			<IsAssigned>true</IsAssigned>
+			<LastChangeTime>2020-02-29</LastChangeTime>
+			<AutoSelect>0</AutoSelect>
+			<AutoDownload>0</AutoDownload>
+			<SupersedenceBehavior>0</SupersedenceBehavior>
+		</Deployment>
+		<IsLeaf>true</IsLeaf>
+		<Xml>&lt;UpdateIdentity UpdateID="{6}" RevisionNumber="204" /&gt;&lt;Properties UpdateType="Software" /&gt;&lt;Relationships&gt;&lt;/Relationships&gt;&lt;ApplicabilityRules&gt;&lt;IsInstalled&gt;&lt;False /&gt;&lt;/IsInstalled&gt;&lt;IsInstallable&gt;&lt;True /&gt;&lt;/IsInstallable&gt;&lt;/ApplicabilityRules&gt;</Xml>
+	</UpdateInfo>
+</NewUpdates>
