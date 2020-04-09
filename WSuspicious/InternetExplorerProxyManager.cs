@@ -3,7 +3,7 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
-namespace WSUSProxy
+namespace WSuspicious
 {
     enum ProxyTypes
     {

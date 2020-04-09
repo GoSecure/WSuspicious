@@ -7,8 +7,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{9501F208-FD68-469A-A77B-BB37314ECE33}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>WSUSProxy</RootNamespace>
-    <AssemblyName>WSUSProxy</AssemblyName>
+    <RootNamespace>WSuspicious</RootNamespace>
+    <AssemblyName>WSuspicious</AssemblyName>
     <TargetFrameworkVersion>v4.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <Deterministic>true</Deterministic>
@@ -131,7 +131,7 @@
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <Target Name="ILMerge">
     <!-- the ILMergePath property points to the location of ILMerge.exe console application -->
-    <Exec Command="$(ILMergeConsolePath) Bin\Release\WSUSProxy.exe /out:WSUSProxy.exe ^&#xD;&#xA;	                                     Bin\Release\BouncyCastle.Crypto.dll ^&#xD;&#xA;	                                     Bin\Release\BrotliSharpLib.dll ^&#xD;&#xA;	                                     Bin\Release\System.Buffers.dll ^&#xD;&#xA;	                                     Bin\Release\System.Memory.dll ^&#xD;&#xA;	                                     Bin\Release\System.Runtime.CompilerServices.Unsafe.dll ^&#xD;&#xA;	                                     Bin\Release\System.Threading.Tasks.Extensions.dll ^&#xD;&#xA;	                                     Bin\Release\Titanium.Web.Proxy.dll" />
+    <Exec Command="$(ILMergeConsolePath) Bin\Release\WSuspicious.exe /out:WSuspicious.exe ^&#xD;&#xA;	                                     Bin\Release\BouncyCastle.Crypto.dll ^&#xD;&#xA;	                                     Bin\Release\BrotliSharpLib.dll ^&#xD;&#xA;	                                     Bin\Release\System.Buffers.dll ^&#xD;&#xA;	                                     Bin\Release\System.Memory.dll ^&#xD;&#xA;	                                     Bin\Release\System.Runtime.CompilerServices.Unsafe.dll ^&#xD;&#xA;	                                     Bin\Release\System.Threading.Tasks.Extensions.dll ^&#xD;&#xA;	                                     Bin\Release\Titanium.Web.Proxy.dll" />
   </Target>
   <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
     <PropertyGroup>
