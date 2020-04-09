@@ -25,7 +25,7 @@ namespace WSUSProxy
         
         public void setProxy(ProxyTypes protocol, string proxyhost, int port)
         {
-            this.proxyEnabled = (int)Registry.GetValue(keyName, "ProxyEnable", 0);
+            this.proxyEnabled = Convert.ToInt32(Registry.GetValue(keyName, "ProxyEnable", 0));
             this.originalProxyUrl = (string)Registry.GetValue(keyName, "ProxyServer", "");
 
             string currentValue = this.originalProxyUrl;
@@ -61,7 +61,7 @@ namespace WSUSProxy
             }
             
             Registry.SetValue(keyName, "ProxyServer", currentValue);
-            Registry.SetValue(keyName, "ProxyEnable", "1");
+            Registry.SetValue(keyName, "ProxyEnable", 1);
 
             // These lines implement the Interface in the beginning of program 
             // They cause the OS to refresh the settings, causing IP to realy update

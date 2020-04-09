@@ -60,6 +60,7 @@ namespace WSUSProxy
 
             // Setup the proxy
             proxyServer = new ProxyServer(false, false, false);
+            proxyServer.CertificateManager.CertificateStorage = new InMemoryCertificateCache();
 
             // Silent all exceptions and ensure we never crash and cause DoS
             proxyServer.ExceptionFunc = async exception =>

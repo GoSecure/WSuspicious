@@ -1,10 +1,5 @@
 ﻿using Microsoft.Win32;
 using System;
-using System.Net;
-using System.Threading.Tasks;
-using Titanium.Web.Proxy;
-using Titanium.Web.Proxy.EventArguments;
-using Titanium.Web.Proxy.Models;
 
 namespace WSUSProxy
 {
@@ -12,8 +7,7 @@ namespace WSUSProxy
     {
         public static int Main(string[] args)
         {
-            //string wsusConfig = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\", "WUServer", null);
-            string wsusConfig = "https://127.0.0.1:13337";
+            string wsusConfig = (string)Registry.GetValue(@"HKEY_LOCAL_MACHINE\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\", "WUServer", null);
 
             string wsusHost = null;
             bool isHttps = false;
