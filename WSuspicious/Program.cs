@@ -1,5 +1,6 @@
-﻿using Microsoft.Win32;
-using System;
+﻿using System;
+using Microsoft.Win32;
+using WSuspicious.Proxy;
 
 namespace WSuspicious
 {
@@ -19,7 +20,7 @@ namespace WSuspicious
 
                 Console.WriteLine(String.Format("Detected {0} WSUS Server - {1}", wsusURI.Scheme, wsusHost));
 
-                Proxy proxy = new Proxy(wsusHost, isHttps, @".\PsExec64.exe");
+                WsusProxy proxy = new WsusProxy(wsusHost, isHttps, @".\PsExec64.exe");
                 proxy.Start();
 
                 Console.WriteLine("Hit any key to exit..");

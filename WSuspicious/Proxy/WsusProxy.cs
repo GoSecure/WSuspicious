@@ -10,9 +10,9 @@ using Titanium.Web.Proxy.EventArguments;
 using Titanium.Web.Proxy.Exceptions;
 using Titanium.Web.Proxy.Models;
 
-namespace WSuspicious
+namespace WSuspicious.Proxy
 {
-    class Proxy
+    class WsusProxy
     {
         private readonly SemaphoreSlim @lock = new SemaphoreSlim(1);
         private readonly ProxyServer proxyServer;
@@ -35,13 +35,13 @@ namespace WSuspicious
 
         private readonly string executedCommand;
 
-        public Proxy(string wsusHost, bool isHTTPS, string psExecPath) : this(wsusHost, isHTTPS, psExecPath, "cmd /c \"echo 1 > C:\\mitmdump_poc.txt\"")
+        public WsusProxy(string wsusHost, bool isHTTPS, string psExecPath) : this(wsusHost, isHTTPS, psExecPath, "cmd /c \"echo 1 > C:\\mitmdump_poc.txt\"")
         { }
 
-        public Proxy(string wsusHost, bool isHTTPS, string psExecPath, string executedCommand) : this(wsusHost, isHTTPS, psExecPath, executedCommand, false)
+        public WsusProxy(string wsusHost, bool isHTTPS, string psExecPath, string executedCommand) : this(wsusHost, isHTTPS, psExecPath, executedCommand, false)
         { }
 
-        public Proxy(string wsusHost, bool isHTTPS, string psExecPath, string executedCommand, bool debug)
+        public WsusProxy(string wsusHost, bool isHTTPS, string psExecPath, string executedCommand, bool debug)
         {
             this.isDebug = debug;
             this.isHTTPS = isHTTPS;

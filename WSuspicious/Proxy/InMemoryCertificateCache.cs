@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using Titanium.Web.Proxy.Network;
 
-namespace WSuspicious
+namespace WSuspicious.Proxy
 {
     public sealed class InMemoryCertificateCache : ICertificateCache
     {
