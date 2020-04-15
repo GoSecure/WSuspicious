@@ -3,14 +3,8 @@ using System;
 using System.Runtime.InteropServices;
 using System.Text.RegularExpressions;
 
-namespace WSuspicious
+namespace WSuspicious.Proxy
 {
-    enum ProxyTypes
-    {
-        HTTP,
-        HTTPS
-    }
-
     class InternetExplorerProxyManager
     {
         [DllImport("wininet.dll")]
@@ -23,7 +17,7 @@ namespace WSuspicious
 
         private const string keyName = "HKEY_CURRENT_USER\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings";
         
-        public void setProxy(ProxyTypes protocol, string proxyhost, int port)
+        public void setProxy(string proxyhost, int port)
         {
             this.proxyEnabled = Convert.ToInt32(Registry.GetValue(keyName, "ProxyEnable", 0));
             this.originalProxyUrl = (string)Registry.GetValue(keyName, "ProxyServer", "");
@@ -33,31 +27,15 @@ namespace WSuspicious
             if (Regex.IsMatch(currentValue, "^[^:|=]{1,}:[0-9]{1,}$"))
             {
                 // This is a global proxy, we have to split it
-                switch (protocol)
-                {
-                    case ProxyTypes.HTTP:
-                        currentValue = String.Format("http={0}:{1};https={2};ftp={3};socks={4}", proxyhost, port, currentValue, currentValue, currentValue);
-                        break;
-                    case ProxyTypes.HTTPS:
-                        currentValue = String.Format("http={0};https={1}:{2};ftp={3};socks={4}", proxyhost, port, currentValue, currentValue, currentValue);
-                        break;
-                    default:
-                        break;
-                }
+                currentValue = String.Format("http={0}:{1};https={2};ftp={3};socks={4}", proxyhost, port, currentValue, currentValue, currentValue);
+            }
+            else if (String.IsNullOrWhiteSpace(currentValue))
+            {
+                currentValue = String.Format("http={0}:{1}", proxyhost, port);
             }
             else
             {
-                switch (protocol)
-                {
-                    case ProxyTypes.HTTP:
-                        currentValue = Regex.Replace(currentValue, "http=[^:]{1,}:[0-9]{1,}", String.Format("http={0}:{1}", proxyhost, port));
-                        break;
-                    case ProxyTypes.HTTPS:
-                        currentValue = Regex.Replace(currentValue, "https=[^:]{1,}:[0-9]{1,}", String.Format("https={0}:{1}", proxyhost, port));
-                        break;
-                    default:
-                        break;
-                }
+                currentValue = Regex.Replace(currentValue, "http=[^:]{1,}:[0-9]{1,}", String.Format("http={0}:{1}", proxyhost, port));
             }
             
             Registry.SetValue(keyName, "ProxyServer", currentValue);

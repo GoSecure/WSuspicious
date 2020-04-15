@@ -45,7 +45,7 @@ namespace WSuspicious
             }
             else
             {
-                arguments["/command"] = "-accepteula -s -d cmd /c \"echo 1 > C:\\mitmdump_poc.txt\"";
+                arguments["/command"] = "-accepteula -s -d cmd /c \"echo 1 > C:\\wsuspicious.was.here\"";
             }
 
             return arguments;

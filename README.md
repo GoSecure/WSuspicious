@@ -10,5 +10,5 @@ It was inspired from the WSuspect proxy project: https://github.com/ctxis/wsuspe
 The ILMerge dependency can be used to compile the application into a standalone .exe file.
 To compile and compile the application, simply use the following command:
 ```
-dotnet msbuild /t:Restore /t:Build /p:Configuration=Release /p:DebugSymbols=false /p:DebugType=None /t:ILMerge /p:TrimUnusedDependencies=true
+dotnet msbuild /t:Restore /t:Clean /t:Build /p:Configuration=Release /p:DebugSymbols=false /p:DebugType=None /t:ILMerge /p:TrimUnusedDependencies=true
 ```

@@ -8,25 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Update="Properties\Resources.Designer.cs">
-      <DesignTime>True</DesignTime>
-      <AutoGen>True</AutoGen>
-      <DependentUpon>Resources.resx</DependentUpon>
-    </Compile>
-  </ItemGroup>
-
-  <ItemGroup>
-    <EmbeddedResource Update="Properties\Resources.resx">
-      <Generator>ResXFileCodeGenerator</Generator>
-      <LastGenOutput>Resources.Designer.cs</LastGenOutput>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Resources\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="Titanium.Web.Proxy" Version="3.1.1288" />
   </ItemGroup>
   
@@ -36,14 +17,7 @@
 
   <Target Name="ILMerge">
     <!-- the ILMergePath property points to the location of ILMerge.exe console application -->
-    <Exec Command="$(ILMergeConsolePath) bin\Release\net45\WSuspicious.exe /out:WSuspicious.exe ^
-	                                     bin\Release\net45\BouncyCastle.Crypto.dll ^
-                                         bin\Release\net45\BrotliSharpLib.dll ^
-                                         bin\Release\net45\System.Buffers.dll ^
-                                         bin\Release\net45\System.Memory.dll ^
-                                         bin\Release\net45\System.Runtime.CompilerServices.Unsafe.dll ^
-                                         bin\Release\net45\System.Threading.Tasks.Extensions.dll ^
-                                         bin\Release\net45\Titanium.Web.Proxy.dll" />
+    <Exec Command="$(ILMergeConsolePath) bin\Release\net45\WSuspicious.exe /out:WSuspicious.exe ^&#xD;&#xA;	                                     bin\Release\net45\BouncyCastle.Crypto.dll ^&#xD;&#xA;                                         bin\Release\net45\BrotliSharpLib.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Buffers.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Memory.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Runtime.CompilerServices.Unsafe.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Threading.Tasks.Extensions.dll ^&#xD;&#xA;                                         bin\Release\net45\Titanium.Web.Proxy.dll" />
   </Target>
 
 </Project>
