@@ -192,6 +192,8 @@ namespace WSuspicious.Proxy
                 {
                     // return file
                     e.Ok(payload);
+                    await writeToConsole("---- The payload is on the way. ----");
+                    await writeToConsole("---- All done. ----");
                 }
             }
         }
