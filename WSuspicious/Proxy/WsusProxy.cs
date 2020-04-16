@@ -11,6 +11,7 @@ using Titanium.Web.Proxy;
 using Titanium.Web.Proxy.EventArguments;
 using Titanium.Web.Proxy.Exceptions;
 using Titanium.Web.Proxy.Models;
+using Titanium.Web.Proxy.Network;
 
 namespace WSuspicious.Proxy
 {
@@ -74,6 +75,10 @@ namespace WSuspicious.Proxy
 
             // Setup the proxy
             proxyServer = new ProxyServer(false, false, false);
+
+            // We dont care about the certificate engine since we do not support HTTPS.
+            // so we will change it to avoid including BouncyCastle in the binary and reduce its size.
+            proxyServer.CertificateManager.CertificateEngine = CertificateEngine.DefaultWindows;
             proxyServer.CertificateManager.CertificateStorage = new InMemoryCertificateCache();
 
             // Silent all exceptions and ensure we never crash and cause DoS
