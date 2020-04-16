@@ -10,7 +10,6 @@ namespace WSuspicious
     {
         public static int Main(string[] args)
         {
-            WindowsUpdateLauncher.StartUpdates();
             Dictionary<string, string> arguments = ArgumentsParser.parse(args);
             if (arguments.ContainsKey("/help"))
             {
