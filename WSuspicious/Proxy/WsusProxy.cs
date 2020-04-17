@@ -37,18 +37,16 @@ namespace WSuspicious.Proxy
         private readonly string uuid2;
 
         private readonly bool isDebug;
-        private readonly bool isHTTPS;
         private readonly string wsusHost;
 
         private readonly string executedCommand;
 
-        public WsusProxy(string wsusHost, bool isHTTPS, byte[] payload, string payloadExecutableName, string executedCommand) : this(wsusHost, isHTTPS, payload, payloadExecutableName, executedCommand, false)
+        public WsusProxy(string wsusHost, byte[] payload, string payloadExecutableName, string executedCommand) : this(wsusHost, payload, payloadExecutableName, executedCommand, false)
         { }
 
-        public WsusProxy(string wsusHost, bool isHTTPS, byte[] payload, string payloadExecutableName, string executedCommand, bool debug)
+        public WsusProxy(string wsusHost, byte[] payload, string payloadExecutableName, string executedCommand, bool debug)
         {
             this.isDebug = debug;
-            this.isHTTPS = isHTTPS;
             this.wsusHost = wsusHost;
             this.payload = payload;
             this.payloadExecutableName = payloadExecutableName;
