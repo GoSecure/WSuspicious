@@ -21,7 +21,6 @@ namespace WSuspicious
 
 
             string wsusHost = null;
-            bool isHttps = false;
             if (wsusConfig != null)
             {
                 Uri wsusURI = new Uri(wsusConfig);
@@ -36,7 +35,7 @@ namespace WSuspicious
 
                 Console.WriteLine(String.Format("Detected WSUS Server - {0}", wsusHost));
 
-                using (WsusProxy proxy = new WsusProxy(wsusHost, isHttps, File.ReadAllBytes(arguments["/exe"]), Path.GetFileName(arguments["/exe"]), arguments["/command"], arguments.ContainsKey("/debug")))
+                using (WsusProxy proxy = new WsusProxy(wsusHost, File.ReadAllBytes(arguments["/exe"]), Path.GetFileName(arguments["/exe"]), arguments["/command"], arguments.ContainsKey("/debug")))
                 {
                     proxy.Start(13337);
 
