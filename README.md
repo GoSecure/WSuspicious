@@ -4,8 +4,15 @@
 This is a proof of concept program to escalate privileges on a Windows host using non-SSL WSUS traffic.
 It was inspired from the WSuspect proxy project: https://github.com/ctxis/wsuspect-proxy
 
+## Acknowledgements
+Privilege escalation module written by Maxime Nadeau from GoSecure
+
+Huge thanks to:
+* Mathieu Novis and Julien Pineault from GoSecure for reviving the WSUS proxy attack by making the payloads work with Windows 10
+* Paul Stone and Alex Chapman from Context Information Security for writing and researching the original proxy PoC
+
 ## Usage
-The tool was tested on a Windows 10 machine (10.0.18363).
+The tool was tested on Windows 10 machines (10.0.18363 and 10.0.17763) in different domain environments.
 
 ```
 Usage: WSuspicious [OPTION]...
