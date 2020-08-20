@@ -3,7 +3,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 
-namespace WSuspicious
+namespace WSuspicious.Utility
 {
     public static class WindowsUpdateLauncher
     {

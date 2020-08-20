@@ -5,6 +5,7 @@
     <TargetFramework>net45</TargetFramework>
     <RootNamespace>WSuspicious</RootNamespace>
     <AssemblyName>WSuspicious</AssemblyName>
+    <StartupObject>WSuspicious.Program</StartupObject>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
@@ -22,6 +23,6 @@
 
   <Target Name="ILMerge" AfterTargets="PostBuildEvent" Condition=" '$(Configuration)' == 'Release' ">
     <!-- the ILMergePath property points to the location of ILMerge.exe console application -->
-    <Exec Command="$(ILMergeConsolePath) bin\Release\net45\WSuspicious.exe /out:WSuspicious.exe ^&#xD;&#xA;                                         bin\Release\net45\BrotliSharpLib.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Buffers.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Memory.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Runtime.CompilerServices.Unsafe.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Threading.Tasks.Extensions.dll ^&#xD;&#xA;                                         bin\Release\net45\Titanium.Web.Proxy.dll" />
+    <Exec Command="$(ILMergeConsolePath) bin\Release\net45\WSuspicious.exe /out:WSuspicious.exe ^&#xD;&#xA;                                         bin\Release\net45\BouncyCastle.Crypto.dll ^&#xD;&#xA;                                         bin\Release\net45\BrotliSharpLib.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Buffers.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Memory.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Runtime.CompilerServices.Unsafe.dll ^&#xD;&#xA;                                         bin\Release\net45\System.Threading.Tasks.Extensions.dll ^&#xD;&#xA;                                         bin\Release\net45\Titanium.Web.Proxy.dll" />
   </Target>
 </Project>
