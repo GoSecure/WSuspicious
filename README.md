@@ -13,7 +13,7 @@ Huge thanks to:
 * Paul Stone and Alex Chapman from Context Information Security for writing and researching the original proxy PoC
 
 ## Usage
-The tool was tested on Windows 10 machines (10.0.17763 and 10.0.18363).
+The tool was tested on Windows 10 machines (10.0.17763 and 10.0.18363) in different domain environments.
 
 ```
 Usage: WSuspicious [OPTION]...
