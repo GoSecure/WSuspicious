@@ -1,7 +1,8 @@
 # WSuspicious
 
 ## Summary
-This is a proof of concept program to escalate privileges on a Windows host using non-SSL WSUS traffic.
+This is a proof of concept program to escalate privileges on a Windows host by abusing WSUS.
+Details in this blog post: https://www.gosecure.net/blog/2020/09/08/wsus-attacks-part-2-cve-2020-1013-a-windows-10-local-privilege-escalation-1-day/
 It was inspired from the WSuspect proxy project: https://github.com/ctxis/wsuspect-proxy
 
 ## Acknowledgements
