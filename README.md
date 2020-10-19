@@ -37,7 +37,7 @@ If launched without any arguments, the script will simply create the file C:\\ws
 ```
 
 ### Examples
-![WSuspicious Privesc Example gif](https://raw.githubusercontent.com/GoSecure/WSuspicious/master/docs/privesc.gif)
+![WSuspicious Privesc Example gif](https://github.com/GoSecure/WSuspicious/raw/master/docs/privesc.gif)
 
 ## Compilation
 The ILMerge dependency can be used to compile the application into a standalone .exe file.
